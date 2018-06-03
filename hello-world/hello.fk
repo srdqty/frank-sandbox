@@ -1,0 +1,10 @@
+map : {{X -> Y} -> List X -> List Y}
+map f []        = []
+map f (x :: xs) = f x :: map f xs
+
+-- I/O
+print : {String -> [Console]Unit}
+print s = map ouch s; unit
+
+main : {[Console]Unit}
+main! = print "hello\n"
