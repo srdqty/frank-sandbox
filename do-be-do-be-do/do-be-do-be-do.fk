@@ -1,0 +1,72 @@
+data Zero =
+
+data Nat = zero | suc Nat
+
+data Pair X Y = pair X Y
+
+append : {List X -> List X -> List X}
+append nil ys = ys
+append (cons x xs) ys = cons x (append xs ys)
+
+map : {{X -> Y} -> List X -> List Y}
+map f nil = nil
+map f (cons x xs) = cons (f x) (map f xs)
+
+-- outer braces are optional for top-level bindings
+ex1 : {Unit -> List Int}
+ex1 unit = map {n -> n + 1} (cons 1 (cons 2 (cons 3 nil)))
+
+fst : X -> Y -> X
+fst x y = x
+
+if : Bool -> {X} -> {X} -> X
+if tt t f = t!
+if ff t f = f!
+
+on : X -> {X -> Y} -> Y
+on x f = f x
+
+shortAnd : Bool -> {Bool} -> Bool
+shortAnd x c = on x { tt -> c! | ff -> ff }
+
+interface Send X = send : X -> Unit
+
+interface Receive X = receive : X
+
+interface State S = get : S | put : S -> Unit
+
+interface Abort = aborting : Zero
+
+abort : [Abort]X
+abort! = on aborting! {}
+
+sends : List X -> [Send X]Unit
+sends xs = map send xs; unit
+
+catter : [Receive (List X)] List X
+catter! = on receive! { nil -> nil | xs -> append xs catter! }
+
+next : [State Int] Int
+next! = fst get! (put (get! + 1))
+
+state : S -> <State S> X -> X
+state _ x = x
+state s <get -> k> = state s (k s)
+state _ <put s -> k> = state s (k unit)
+
+index : List X -> List (Pair Int X)
+index xs = state 0 (map {x -> pair next! x} xs)
+
+pipe : <Send X> Unit -> <Receive X> Y -> [Abort] Y
+pipe <send x -> s> <receive -> r> = pipe (s unit) (r x)
+pipe <_> y = y
+pipe unit <_> = abort!
+
+-- in the paper, the ! is missing after receive
+spacer : [Send String, Receive String] Unit
+spacer! = send receive!; send " "; spacer!
+
+main : {[Abort]String}
+main! =
+  pipe (sends (cons "do" (cons "be" (cons "" nil))))
+       (pipe spacer! catter!)
