@@ -1,8 +1,9 @@
 # Based on https://nixos.wiki/wiki/How_to_fetch_Nixpkgs_with_an_empty_NIX_PATH
 
-{ url
+{ rev
+, owner
+, repo
 , sha256
-, rev ? "unknown"
 , system ? builtins.currentSystem
 }:
 
@@ -17,14 +18,16 @@ ifThenElse {
   # In Nix 1.12, we can just give a `sha256` to `builtins.fetchTarball`.
   thenValue = (
     builtins.fetchTarball {
-      inherit url sha256;
+      url = "https://github.com/${owner}/${repo}/archive/${rev}.tar.gz";
+      inherit sha256;
     });
 
   # This hack should at least work for Nix 1.11
   elseValue = (
     (rec {
       tarball = import <nix/fetchurl.nix> {
-        inherit url sha256;
+        url = "https://github.com/${owner}/${repo}/archive/${rev}.tar.gz";
+        inherit sha256;
       };
 
       builtin-paths = import <nix/config.nix>;
